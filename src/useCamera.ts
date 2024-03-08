@@ -1,5 +1,6 @@
 import { FaceLandmarker, FaceLandmarkerOptions, FilesetResolver } from "@mediapipe/tasks-vision"
 import { useCallback, useEffect, useRef, useState } from "react"
+import Webcam from "react-webcam"
 
 interface blendshapesType {
 	index: number
@@ -7,7 +8,7 @@ interface blendshapesType {
 	categoryName: string
 	displayName: string
 }
-let video: HTMLVideoElement
+let video: Webcam
 let faceLandmarker: FaceLandmarker
 let lastVideoTime = -1
 let blendshapes: blendshapesType[] = []
@@ -31,8 +32,8 @@ const options: FaceLandmarkerOptions = {
 	outputFacialTransformationMatrixes: true,
 }
 export const useFaceDetection = () => {
-	const refVideo = useRef<HTMLVideoElement>(null)
-	const [stop, setStop] = useState(true)
+	const refVideo = useRef<Webcam>(null)
+	const [stop, setStop] = useState(false)
 	const [msg, setMsg] = useState("Hello World!")
 	const setup = async () => {
 		const filesetResolver = await FilesetResolver.forVisionTasks(
@@ -40,24 +41,28 @@ export const useFaceDetection = () => {
 		)
 		faceLandmarker = await FaceLandmarker.createFromOptions(filesetResolver, options)
 
-		video = refVideo.current as HTMLVideoElement
+		video = refVideo.current as Webcam
 		navigator.mediaDevices
 			.getUserMedia({
 				video: { width: 1280, height: 720 },
 				audio: false,
 			})
 			.then(function (stream) {
-				video.srcObject = stream
-				video.addEventListener("loadeddata", predict)
+				video.video!.srcObject = stream
+				try {
+					video.video!.addEventListener("loadeddata", predict)
+				} catch (e) {
+					alert(e)
+				}
 			})
 	}
 
 	const predict = useCallback(async () => {
 		let nowInMs = Date.now()
-		if (lastVideoTime !== video.currentTime) {
-			setMsg("start")
-			lastVideoTime = video.currentTime
-			const faceLandmarkerResult = faceLandmarker.detectForVideo(video, nowInMs)
+		if (lastVideoTime !== video.video!.currentTime) {
+			// setMsg("start")
+			lastVideoTime = video.video!.currentTime
+			const faceLandmarkerResult = faceLandmarker.detectForVideo(video.video!, nowInMs)
 
 			if (
 				faceLandmarkerResult.faceBlendshapes &&
@@ -88,14 +93,14 @@ export const useFaceDetection = () => {
 	useEffect(() => {
 		if (!video) return
 		if (stop) {
-			video.removeEventListener("loadeddata", predict)
-			video.pause()
+			video.video!.removeEventListener("loadeddata", predict)
+			video.video!.pause()
 		} else {
-			video.addEventListener("loadeddata", predict)
-			video.play()
+			video.video!.addEventListener("loadeddata", predict)
+			video.video!.play()
 		}
 		return () => {
-			video.removeEventListener("loadeddata", predict)
+			video.video!.removeEventListener("loadeddata", predict)
 		}
 	}, [stop])
 	return {
