@@ -9,8 +9,8 @@ function App() {
 	}, [])
 
 	return (
-		<div className="App">
-			<video ref={refVideo} className="camera-feed" id="video" autoPlay  />
+		<div className="w-full h-full flex flex-col justify-center items-center">
+			<video ref={refVideo} className="w-[400px]" width={300} id="video" autoPlay />
 			<button type="button" onClick={() => setStop((prev) => !prev)}>
 				Pause
 			</button>

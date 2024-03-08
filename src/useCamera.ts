@@ -23,7 +23,7 @@ const SMILE = [45, 44] // 0-1
 const options: FaceLandmarkerOptions = {
 	baseOptions: {
 		modelAssetPath: `./face_landmarker.task`,
-		delegate: "GPU",
+		delegate: "CPU",
 	},
 	numFaces: 1,
 	runningMode: "VIDEO",
@@ -32,7 +32,7 @@ const options: FaceLandmarkerOptions = {
 }
 export const useFaceDetection = () => {
 	const refVideo = useRef<HTMLVideoElement>(null)
-	const [stop, setStop] = useState(false)
+	const [stop, setStop] = useState(true)
 	const [msg, setMsg] = useState("Hello World!")
 	const setup = async () => {
 		const filesetResolver = await FilesetResolver.forVisionTasks(
