@@ -1,17 +1,18 @@
-import { FaceLandmarker, FaceLandmarkerOptions, FilesetResolver } from "@mediapipe/tasks-vision"
-import { useCallback, useEffect, useRef, useState } from "react"
+import {
+	Classifications,
+	FaceLandmarker,
+	FaceLandmarkerOptions,
+	FilesetResolver,
+	NormalizedLandmark,
+} from "@mediapipe/tasks-vision"
+import { useCallback, useRef, useState } from "react"
 import Webcam from "react-webcam"
+import { DrawingUtils } from "@mediapipe/tasks-vision"
+import { DistanceVerification } from "./componnents/Face"
 
-interface blendshapesType {
-	index: number
-	score: number
-	categoryName: string
-	displayName: string
-}
-let video: Webcam
+let videoTarget: Webcam
 let faceLandmarker: FaceLandmarker
 let lastVideoTime = -1
-let blendshapes: blendshapesType[] = []
 
 const EYE_LEFT_CLOSE = 9 // 0-1
 const EYE_RIGHT_CLOSE = 10 // 0-1
@@ -21,92 +22,164 @@ const LOOK_LEFT = [16, 13] // 0-1
 const LOOK_RIGHT = [14, 15] // 0-1
 const SMILE = [45, 44] // 0-1
 
+export const isBlinking = (faceBlendshapes: Classifications) => {
+	return (
+		faceBlendshapes.categories[EYE_LEFT_CLOSE].score > 0.5 &&
+		faceBlendshapes.categories[EYE_RIGHT_CLOSE].score > 0.5
+	)
+}
+
+export const isHeadTurnLeft = (faceBlendshapes: Classifications) => {
+	return (
+		faceBlendshapes.categories[LOOK_LEFT[0]].score > 0.5 &&
+		faceBlendshapes.categories[LOOK_LEFT[1]].score > 0.5 &&
+		faceBlendshapes.categories[LOOK_RIGHT[0]].score < 0.5 &&
+		faceBlendshapes.categories[LOOK_RIGHT[1]].score < 0.5
+	)
+}
+export const isHeadTurnRight = (faceBlendshapes: Classifications) => {
+	return (
+		faceBlendshapes.categories[LOOK_RIGHT[0]].score > 0.5 &&
+		faceBlendshapes.categories[LOOK_RIGHT[1]].score > 0.5 &&
+		faceBlendshapes.categories[LOOK_LEFT[0]].score < 0.5 &&
+		faceBlendshapes.categories[LOOK_LEFT[1]].score < 0.5
+	)
+}
+
+export const isSmiling = (faceBlendshapes: Classifications) => {
+	return faceBlendshapes.categories[SMILE[0]].score > 0.5 && faceBlendshapes.categories[SMILE[1]].score > 0.5
+}
+
+export const isFaceDown = (faceBlendshapes: Classifications) => {
+	return (
+		faceBlendshapes.categories[FACE_DOWN[0]].score > 0.5 &&
+		faceBlendshapes.categories[FACE_DOWN[1]].score > 0.5 &&
+		faceBlendshapes.categories[LOOK_UP[0]].score < 0.5 &&
+		faceBlendshapes.categories[LOOK_UP[1]].score < 0.5
+	)
+}
+
+export const isFaceUp = (faceBlendshapes: Classifications) => {
+	return (
+		faceBlendshapes.categories[LOOK_UP[0]].score > 0.5 &&
+		faceBlendshapes.categories[LOOK_UP[1]].score > 0.5 &&
+		faceBlendshapes.categories[FACE_DOWN[0]].score < 0.5 &&
+		faceBlendshapes.categories[FACE_DOWN[1]].score < 0.5
+	)
+}
+
 const options: FaceLandmarkerOptions = {
 	baseOptions: {
 		modelAssetPath: `./face_landmarker.task`,
-		delegate: "CPU",
+		delegate: "GPU",
 	},
 	numFaces: 1,
 	runningMode: "VIDEO",
 	outputFaceBlendshapes: true,
 	outputFacialTransformationMatrixes: true,
 }
+
+const init = {
+	categories: [],
+	headIndex: 0,
+	headName: "",
+}
+
+export const calculateDistance = (x1: number, y1: number, x2: number, y2: number) => {
+	return Math.sqrt(Math.pow(x1 - x2, 2) + Math.pow(y1 - y2, 2))
+}
+
+// Min and Max face size
+export const MIN_FACE_SIZE = 0.50
+export const MAX_FACE_SIZE = 0.70
+
+export const verifyDistance = (keypoints: NormalizedLandmark[]): DistanceVerification => {
+	const faceSize = calculateDistance(keypoints[10].x, keypoints[10].y, keypoints[152].x, keypoints[152].y)
+	return faceSize > MAX_FACE_SIZE
+		? DistanceVerification.CLOSE
+		: faceSize < MIN_FACE_SIZE
+		? DistanceVerification.FAR
+		: DistanceVerification.GOOD
+}
+
 export const useFaceDetection = () => {
+	const refCanvas = useRef<HTMLCanvasElement>(null)
 	const refVideo = useRef<Webcam>(null)
+	const [faceBlendshapes, setFaceBlendshapes] = useState<Classifications>(init)
+	const [distance, setDistance] = useState(0)
 	const [stop, setStop] = useState(false)
-	const [msg, setMsg] = useState("Hello World!")
 	const setup = async () => {
 		const filesetResolver = await FilesetResolver.forVisionTasks(
 			"https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.0/wasm"
 		)
 		faceLandmarker = await FaceLandmarker.createFromOptions(filesetResolver, options)
 
-		video = refVideo.current as Webcam
+		videoTarget = refVideo.current as Webcam
 		navigator.mediaDevices
 			.getUserMedia({
-				video: { width: 1280, height: 720 },
 				audio: false,
+				video: {
+					width: videoTarget.video!.videoWidth,
+					height: videoTarget.video!.videoHeight,
+				},
 			})
 			.then(function (stream) {
-				video.video!.srcObject = stream
+				videoTarget.video!.srcObject = stream
 				try {
-					video.video!.addEventListener("loadeddata", predict)
+					videoTarget.video!.addEventListener("loadeddata", predict)
 				} catch (e) {
 					alert(e)
 				}
 			})
 	}
 
+	const DrawMesh = (
+		faceLandmarks: NormalizedLandmark[][],
+		drawingUtils: DrawingUtils,
+		ctx: CanvasRenderingContext2D
+	) => {
+		if (faceLandmarks && drawingUtils) {
+			ctx.clearRect(0, 0, ctx.canvas.width, ctx.canvas.height)
+
+			for (const landmarks of faceLandmarks) {
+				drawingUtils!.drawConnectors(landmarks, FaceLandmarker.FACE_LANDMARKS_TESSELATION, {
+					color: "#C0C0C0",
+					lineWidth: 1,
+				})
+			}
+		}
+	}
+
 	const predict = useCallback(async () => {
 		let nowInMs = Date.now()
-		if (lastVideoTime !== video.video!.currentTime) {
-			// setMsg("start")
-			lastVideoTime = video.video!.currentTime
-			const faceLandmarkerResult = faceLandmarker.detectForVideo(video.video!, nowInMs)
+		if (refVideo.current && lastVideoTime !== refVideo.current.video?.currentTime) {
+			lastVideoTime = refVideo.current.video!.currentTime
+			const faceLandmarkerResult = faceLandmarker.detectForVideo(refVideo.current.video!, nowInMs)
 
 			if (
 				faceLandmarkerResult.faceBlendshapes &&
 				faceLandmarkerResult.faceBlendshapes.length > 0 &&
 				faceLandmarkerResult.faceBlendshapes[0].categories
 			) {
-				blendshapes = faceLandmarkerResult.faceBlendshapes[0].categories
-				if (blendshapes[EYE_LEFT_CLOSE].score > 0.5) {
-					setMsg("EYE LEFT Blink")
-				} else if (blendshapes[EYE_RIGHT_CLOSE].score > 0.5) {
-					setMsg("EYE RIGHT Blink")
-				} else if (blendshapes[FACE_DOWN[0]].score > 0.5 && blendshapes[FACE_DOWN[1]].score > 0.5) {
-					setMsg("FACE DOWN")
-				} else if (blendshapes[LOOK_UP[0]].score > 0.6 && blendshapes[LOOK_UP[1]].score > 0.6) {
-					setMsg("LOOK UP")
-				} else if (blendshapes[LOOK_RIGHT[0]].score > 0.6 && blendshapes[LOOK_RIGHT[1]].score > 0.6) {
-					setMsg("LOOK RIGHT")
-				} else if (blendshapes[LOOK_LEFT[0]].score > 0.6 && blendshapes[LOOK_LEFT[1]].score > 0.6) {
-					setMsg("LOOK LEFT")
-				} else if (blendshapes[SMILE[0]].score > 0.6 && blendshapes[SMILE[1]].score > 0.6) {
-					setMsg("SMILE")
-				}
+				isBlinking(faceLandmarkerResult.faceBlendshapes[0])
+				setFaceBlendshapes(faceLandmarkerResult.faceBlendshapes[0])
+				const canvasCtx = refCanvas.current!.getContext("2d") as CanvasRenderingContext2D
+				const drawingUtils = new DrawingUtils(canvasCtx)
+				const dist = verifyDistance(faceLandmarkerResult.faceLandmarks[0])
+				setDistance(dist)
+				DrawMesh(faceLandmarkerResult.faceLandmarks, drawingUtils, canvasCtx)
 			}
 		}
 		if (!stop) window.requestAnimationFrame(predict)
 	}, [stop])
 
-	useEffect(() => {
-		if (!video) return
-		if (stop) {
-			video.video!.removeEventListener("loadeddata", predict)
-			video.video!.pause()
-		} else {
-			video.video!.addEventListener("loadeddata", predict)
-			video.video!.play()
-		}
-		return () => {
-			video.video!.removeEventListener("loadeddata", predict)
-		}
-	}, [stop])
 	return {
 		setup,
 		refVideo,
 		setStop,
-		msg,
+		predict,
+		refCanvas,
+		faceBlendshapes,
+		distance,
 	}
 }
