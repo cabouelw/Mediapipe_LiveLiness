@@ -1,7 +1,5 @@
 import "./App.css"
-import { useEffect, useState } from "react"
-import { useFaceDetection } from "./useCamera"
-import Webcam from "react-webcam"
+import { useState } from "react"
 import { FaceApi } from "./componnents/Face"
 
 function App() {

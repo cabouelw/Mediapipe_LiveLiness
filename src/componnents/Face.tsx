@@ -47,8 +47,7 @@ export enum DistanceVerification {
 	FAR = 1,
 }
 
-export const FaceApi: FC<FaceApiProps> = ({ onSubmit, photo, setSelfie }) => {
-	const [isLivelinessDone, setIsLivelinessDone] = useState<boolean>(false)
+export const FaceApi: FC<FaceApiProps> = ({ photo, setSelfie }) => {
 	const [currentStepHumanCheck, setCurrentStepHumanCheck] = useState<VerificationStepHumanCheck>(
 		VerificationStepHumanCheck.LOOK_AT_THE_CAMERA
 	)
@@ -110,7 +109,6 @@ export const FaceApi: FC<FaceApiProps> = ({ onSubmit, photo, setSelfie }) => {
 					setTimeout(() => {
 						setCurrentStepHumanCheck(VerificationStepHumanCheck.FIN)
 					}, 50)
-					setIsLivelinessDone(true)
 				}
 				break
 			default:
