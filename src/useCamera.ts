@@ -95,7 +95,7 @@ export const MAX_FACE_SIZE = 0.7
 
 export const verifyDistance = (keypoints: NormalizedLandmark[], ismobile: boolean): DistanceVerification => {
 	const faceSize =
-		calculateDistance(keypoints[10].x, keypoints[10].y, keypoints[152].x, keypoints[152].y) + (ismobile ? 0.40 : 0)
+		calculateDistance(keypoints[454].x, keypoints[454].y, keypoints[234].x, keypoints[234].y) + (ismobile ? 0.3 : 0)
 	return faceSize > MAX_FACE_SIZE
 		? DistanceVerification.CLOSE
 		: faceSize < MIN_FACE_SIZE
@@ -108,8 +108,8 @@ export const useFaceDetection = () => {
 	const refVideo = useRef<Webcam>(null)
 	const [mystream, setMystream] = useState<MediaStream | null>(null)
 	const [faceBlendshapes, setFaceBlendshapes] = useState<Classifications>(init)
-	const isMobileHeight = useMediaQuery('(max-height: 768px)')
-	const isMobile = useMediaQuery('(max-width: 768px)') || isMobileHeight
+	const isMobileHeight = useMediaQuery("(max-height: 768px)")
+	const isMobile = useMediaQuery("(max-width: 768px)") || isMobileHeight
 	const [distance, setDistance] = useState(0)
 	const setup = async () => {
 		const filesetResolver = await FilesetResolver.forVisionTasks(
