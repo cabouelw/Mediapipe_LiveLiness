@@ -121,10 +121,9 @@ export const useFaceDetection = () => {
 				video: {
 					// width: videoTarget.video!.videoWidth,
 					// height: videoTarget.video!.videoHeight,
-					width: { ideal: videoTarget.video!.videoWidth },
-					height: { ideal: videoTarget.video!.videoHeight },
-
-					facingMode: "environment",
+					width: { min: 320, ideal: 1280, max: 1920 },
+					height: { min: 240, ideal: 720, max: 1080 },
+					facingMode: "user",
 				},
 			})
 			.then(function (stream) {
