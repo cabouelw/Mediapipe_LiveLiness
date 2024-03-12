@@ -1,10 +1,10 @@
 import "./App.css"
 import { useState } from "react"
-import { FaceApi, useMediaQuery } from "./componnents/Face"
+import { useMediaQuery } from "./componnents/Face"
 import Webcam from "react-webcam"
 
 function App() {
-	const [photo, setPhoto] = useState<string>("")
+	// const [photo, setPhoto] = useState<string>("")
 	const [show, setShow] = useState<boolean>(false)
 	const isMobileHeight = useMediaQuery("(max-height: 768px)")
 	const isMobile = useMediaQuery("(max-width: 768px)") || isMobileHeight
@@ -17,23 +17,23 @@ function App() {
 	const videoConstraints = {
 		width: inputResolution.width,
 		height: inputResolution.height,
-		facingMode: "user",
+		facingMode: show ? "user" : "environment",
 	}
 
 	return (
 		<div className="w-full h-full flex flex-col justify-center items-center">
-			{show ? (
-				<Webcam
-					muted={true}
-					width={inputResolution.width}
-					height={inputResolution.height}
-					className="object-fill"
-					videoConstraints={videoConstraints}
-					mirrored={true}
-				/>
-			) : (
-				<FaceApi photo={photo} setSelfie={setPhoto} onSubmit={() => {}} />
-			)}
+			{/* {show ? ( */}
+			<Webcam
+				muted={true}
+				width={inputResolution.width}
+				height={inputResolution.height}
+				className="object-fill"
+				videoConstraints={videoConstraints}
+				mirrored={true}
+			/>
+			{/* // ) : ( */}
+			{/* // 	<FaceApi photo={photo} setSelfie={setPhoto} onSubmit={() => {}} />
+			// )} */}
 			<button onClick={() => setShow((prev) => !prev)} className="bg-white text-black px-4 py-3 rounded-xl">
 				Switch
 			</button>
