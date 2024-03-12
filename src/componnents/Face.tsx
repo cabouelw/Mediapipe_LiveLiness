@@ -194,7 +194,7 @@ export const FaceApi: FC<FaceApiProps> = ({ photo, setSelfie }) => {
 						ref={refVideo}
 						width={inputResolution.width}
 						height={inputResolution.height}
-						className="absolute top-0 left-0 object-fill h-full"
+						className="absolute top-0 left-0  h-full"
 						videoConstraints={videoConstraints}
 						mirrored={true}
 						
