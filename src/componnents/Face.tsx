@@ -165,7 +165,7 @@ export const FaceApi: FC<FaceApiProps> = ({ photo, setSelfie }) => {
 	}, [faceBlendshapes])
 
 	return (
-		<div className="grid h-full">
+		<div className="grid justify-between gap-4 h-full">
 			<div className="flex flex-col justify-end h-full min-h-24">
 				{stepsData.instruction?.length > 0 ? (
 					<div className="mt-auto">
@@ -182,7 +182,7 @@ export const FaceApi: FC<FaceApiProps> = ({ photo, setSelfie }) => {
 					{stepsData.action} {stepsData.progress}%
 				</p>
 			</div>
-			<div className="grid justify-center place-items-center relative">
+			<div className="grid justify-center  place-items-center relative">
 				<div
 					className={"relative rounded-full overflow-hidden"}
 					style={{
@@ -197,6 +197,7 @@ export const FaceApi: FC<FaceApiProps> = ({ photo, setSelfie }) => {
 						className="absolute top-0 left-0 object-fill h-full"
 						videoConstraints={videoConstraints}
 						mirrored={true}
+						
 					/>
 					<canvas
 						ref={refCanvas}
@@ -208,8 +209,10 @@ export const FaceApi: FC<FaceApiProps> = ({ photo, setSelfie }) => {
 						width={inputResolution.width}
 					/>
 				</div>
-				<button onClick={handleVideo}>Stop/Start</button>
 			</div>
+			<button className="bg-black text-white px-4 py-3 rounded-xl" onClick={handleVideo}>
+				Stop/Start
+			</button>
 		</div>
 	)
 }
