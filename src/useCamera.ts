@@ -119,8 +119,11 @@ export const useFaceDetection = () => {
 			.getUserMedia({
 				audio: false,
 				video: {
-					width: videoTarget.video!.videoWidth,
-					height: videoTarget.video!.videoHeight,
+					// width: videoTarget.video!.videoWidth,
+					// height: videoTarget.video!.videoHeight,
+					width: { ideal: videoTarget.video!.videoWidth },
+					height: { ideal: videoTarget.video!.videoHeight },
+
 					facingMode: "user",
 				},
 			})
@@ -189,6 +192,6 @@ export const useFaceDetection = () => {
 		refCanvas,
 		faceBlendshapes,
 		distance,
-		handleVideo
+		handleVideo,
 	}
 }
