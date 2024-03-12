@@ -51,7 +51,7 @@ export const FaceApi: FC<FaceApiProps> = ({ photo, setSelfie }) => {
 	const [currentStepHumanCheck, setCurrentStepHumanCheck] = useState<VerificationStepHumanCheck>(
 		VerificationStepHumanCheck.LOOK_AT_THE_CAMERA
 	)
-	const { refCanvas, refVideo, setup, faceBlendshapes, distance } = useFaceDetection()
+	const { refCanvas, refVideo, setup, handleVideo, faceBlendshapes, distance, predict } = useFaceDetection()
 
 	const inputResolution = {
 		width: 280,
@@ -65,6 +65,9 @@ export const FaceApi: FC<FaceApiProps> = ({ photo, setSelfie }) => {
 
 	useEffect(() => {
 		setup()
+		return () => {
+			refVideo.current?.video?.removeEventListener("loadeddata", predict)
+		}
 	}, [])
 
 	const takePicture = useCallback(() => {
@@ -186,6 +189,7 @@ export const FaceApi: FC<FaceApiProps> = ({ photo, setSelfie }) => {
 						width={inputResolution.width}
 					/>
 				</div>
+				<button onClick={handleVideo}>Stop/Start</button>
 			</div>
 		</div>
 	)

@@ -5,7 +5,7 @@ import {
 	FilesetResolver,
 	NormalizedLandmark,
 } from "@mediapipe/tasks-vision"
-import { useCallback, useRef, useState } from "react"
+import { useRef, useState } from "react"
 import Webcam from "react-webcam"
 import { DrawingUtils } from "@mediapipe/tasks-vision"
 import { DistanceVerification } from "./componnents/Face"
@@ -90,8 +90,8 @@ export const calculateDistance = (x1: number, y1: number, x2: number, y2: number
 }
 
 // Min and Max face size
-export const MIN_FACE_SIZE = 0.50
-export const MAX_FACE_SIZE = 0.70
+export const MIN_FACE_SIZE = 0.5
+export const MAX_FACE_SIZE = 0.7
 
 export const verifyDistance = (keypoints: NormalizedLandmark[]): DistanceVerification => {
 	const faceSize = calculateDistance(keypoints[10].x, keypoints[10].y, keypoints[152].x, keypoints[152].y)
@@ -105,9 +105,9 @@ export const verifyDistance = (keypoints: NormalizedLandmark[]): DistanceVerific
 export const useFaceDetection = () => {
 	const refCanvas = useRef<HTMLCanvasElement>(null)
 	const refVideo = useRef<Webcam>(null)
+	const [mystream, setMystream] = useState<MediaStream | null>(null)
 	const [faceBlendshapes, setFaceBlendshapes] = useState<Classifications>(init)
 	const [distance, setDistance] = useState(0)
-	const [stop, setStop] = useState(false)
 	const setup = async () => {
 		const filesetResolver = await FilesetResolver.forVisionTasks(
 			"https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.0/wasm"
@@ -121,16 +121,26 @@ export const useFaceDetection = () => {
 				video: {
 					width: videoTarget.video!.videoWidth,
 					height: videoTarget.video!.videoHeight,
+					facingMode: "user",
 				},
 			})
 			.then(function (stream) {
 				videoTarget.video!.srcObject = stream
+				setMystream(stream)
 				try {
 					videoTarget.video!.addEventListener("loadeddata", predict)
 				} catch (e) {
 					alert(e)
 				}
 			})
+	}
+
+	const handleVideo = () => {
+		mystream?.getTracks().forEach((track) => {
+			if (track.readyState === "live" && track.kind === "video") {
+				track.enabled = !track.enabled ? true : false
+			}
+		})
 	}
 
 	const DrawMesh = (
@@ -150,7 +160,7 @@ export const useFaceDetection = () => {
 		}
 	}
 
-	const predict = useCallback(async () => {
+	const predict = async () => {
 		let nowInMs = Date.now()
 		if (refVideo.current && lastVideoTime !== refVideo.current.video?.currentTime) {
 			lastVideoTime = refVideo.current.video!.currentTime
@@ -161,25 +171,24 @@ export const useFaceDetection = () => {
 				faceLandmarkerResult.faceBlendshapes.length > 0 &&
 				faceLandmarkerResult.faceBlendshapes[0].categories
 			) {
-				isBlinking(faceLandmarkerResult.faceBlendshapes[0])
-				setFaceBlendshapes(faceLandmarkerResult.faceBlendshapes[0])
 				const canvasCtx = refCanvas.current!.getContext("2d") as CanvasRenderingContext2D
 				const drawingUtils = new DrawingUtils(canvasCtx)
 				const dist = verifyDistance(faceLandmarkerResult.faceLandmarks[0])
 				setDistance(dist)
+				setFaceBlendshapes(faceLandmarkerResult.faceBlendshapes[0])
 				DrawMesh(faceLandmarkerResult.faceLandmarks, drawingUtils, canvasCtx)
 			}
 		}
-		if (!stop) window.requestAnimationFrame(predict)
-	}, [stop])
+		window.requestAnimationFrame(predict)
+	}
 
 	return {
 		setup,
 		refVideo,
-		setStop,
 		predict,
 		refCanvas,
 		faceBlendshapes,
 		distance,
+		handleVideo
 	}
 }
