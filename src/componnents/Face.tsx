@@ -47,15 +47,34 @@ export enum DistanceVerification {
 	FAR = 1,
 }
 
+export const useMediaQuery = (query: string): boolean => {
+	const [matches, setMatches] = useState<boolean>(false)
+
+	useEffect(() => {
+		const media = window.matchMedia(query)
+		if (media.matches !== matches) {
+			setMatches(media.matches)
+		}
+		const listener = () => setMatches(media.matches)
+		media.addListener(listener)
+		return () => media.removeListener(listener)
+	}, [matches, query])
+
+	return matches
+}
+
 export const FaceApi: FC<FaceApiProps> = ({ photo, setSelfie }) => {
 	const [currentStepHumanCheck, setCurrentStepHumanCheck] = useState<VerificationStepHumanCheck>(
 		VerificationStepHumanCheck.LOOK_AT_THE_CAMERA
 	)
 	const { refCanvas, refVideo, setup, handleVideo, faceBlendshapes, distance, predict } = useFaceDetection()
+	const isMobileHeight = useMediaQuery("(max-height: 768px)")
+	const isMobile = useMediaQuery("(max-width: 768px)") || isMobileHeight
+	const isSmallMobile = useMediaQuery("(max-width: 300px)")
 
 	const inputResolution = {
-		width: 280,
-		height: 280,
+		width: isMobile ? (isSmallMobile ? 210 : 280) : 400,
+		height: isMobile ? (isSmallMobile ? 210 : 280) : 400,
 	}
 	const videoConstraints = {
 		width: inputResolution.width,
