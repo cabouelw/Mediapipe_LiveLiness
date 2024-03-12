@@ -110,8 +110,7 @@ export const useFaceDetection = () => {
 	const refVideo = useRef<Webcam>(null)
 	const [mystream, setMystream] = useState<MediaStream | null>(null)
 	const [faceBlendshapes, setFaceBlendshapes] = useState<Classifications>(init)
-	const isMobileHeight = useMediaQuery("(max-height: 768px)")
-	const isMobile = useMediaQuery("(max-width: 768px)") || isMobileHeight
+	const isMobile = useMediaQuery("(max-width: 768px)")
 	const [distance, setDistance] = useState(0)
 	const setup = async () => {
 		const filesetResolver = await FilesetResolver.forVisionTasks(
