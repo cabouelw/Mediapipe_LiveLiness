@@ -95,7 +95,7 @@ export const MAX_FACE_SIZE = 0.7
 
 export const verifyDistance = (keypoints: NormalizedLandmark[], ismobile: boolean): DistanceVerification => {
 	const faceSize =
-		calculateDistance(keypoints[10].x, keypoints[10].y, keypoints[152].x, keypoints[152].y) + (ismobile ? 20 : 0)
+		calculateDistance(keypoints[10].x, keypoints[10].y, keypoints[152].x, keypoints[152].y) + (ismobile ? 0.40 : 0)
 	return faceSize > MAX_FACE_SIZE
 		? DistanceVerification.CLOSE
 		: faceSize < MIN_FACE_SIZE
