@@ -8,7 +8,7 @@ import {
 import { useRef, useState } from "react"
 import Webcam from "react-webcam"
 import { DrawingUtils } from "@mediapipe/tasks-vision"
-import { DistanceVerification } from "./componnents/Face"
+import { DistanceVerification, useMediaQuery } from "./componnents/Face"
 
 let videoTarget: Webcam
 let faceLandmarker: FaceLandmarker
@@ -93,8 +93,9 @@ export const calculateDistance = (x1: number, y1: number, x2: number, y2: number
 export const MIN_FACE_SIZE = 0.5
 export const MAX_FACE_SIZE = 0.7
 
-export const verifyDistance = (keypoints: NormalizedLandmark[]): DistanceVerification => {
-	const faceSize = calculateDistance(keypoints[10].x, keypoints[10].y, keypoints[152].x, keypoints[152].y)
+export const verifyDistance = (keypoints: NormalizedLandmark[], ismobile: boolean): DistanceVerification => {
+	const faceSize =
+		calculateDistance(keypoints[10].x, keypoints[10].y, keypoints[152].x, keypoints[152].y) + (ismobile ? 20 : 0)
 	return faceSize > MAX_FACE_SIZE
 		? DistanceVerification.CLOSE
 		: faceSize < MIN_FACE_SIZE
@@ -107,6 +108,8 @@ export const useFaceDetection = () => {
 	const refVideo = useRef<Webcam>(null)
 	const [mystream, setMystream] = useState<MediaStream | null>(null)
 	const [faceBlendshapes, setFaceBlendshapes] = useState<Classifications>(init)
+	const isMobileHeight = useMediaQuery('(max-height: 768px)')
+	const isMobile = useMediaQuery('(max-width: 768px)') || isMobileHeight
 	const [distance, setDistance] = useState(0)
 	const setup = async () => {
 		const filesetResolver = await FilesetResolver.forVisionTasks(
@@ -119,10 +122,8 @@ export const useFaceDetection = () => {
 			.getUserMedia({
 				audio: false,
 				video: {
-					// width: videoTarget.video!.videoWidth,
-					// height: videoTarget.video!.videoHeight,
-					width: { min: 320, ideal: 1280, max: 1920 },
-					height: { min: 240, ideal: 720, max: 1080 },
+					width: 1280,
+					height: 720,
 					facingMode: "user",
 				},
 			})
@@ -175,7 +176,7 @@ export const useFaceDetection = () => {
 			) {
 				const canvasCtx = refCanvas.current!.getContext("2d") as CanvasRenderingContext2D
 				const drawingUtils = new DrawingUtils(canvasCtx)
-				const dist = verifyDistance(faceLandmarkerResult.faceLandmarks[0])
+				const dist = verifyDistance(faceLandmarkerResult.faceLandmarks[0], isMobile)
 				setDistance(dist)
 				setFaceBlendshapes(faceLandmarkerResult.faceBlendshapes[0])
 				DrawMesh(faceLandmarkerResult.faceLandmarks, drawingUtils, canvasCtx)
