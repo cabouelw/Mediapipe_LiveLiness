@@ -124,7 +124,7 @@ export const useFaceDetection = () => {
 					width: { ideal: videoTarget.video!.videoWidth },
 					height: { ideal: videoTarget.video!.videoHeight },
 
-					facingMode: "user",
+					facingMode: "environment",
 				},
 			})
 			.then(function (stream) {
