@@ -90,15 +90,17 @@ export const calculateDistance = (x1: number, y1: number, x2: number, y2: number
 }
 
 // Min and Max face size
-export const MIN_FACE_SIZE = 0.5
-export const MAX_FACE_SIZE = 0.7
+export const MIN_FACE_SIZE = 0.35
+export const MAX_FACE_SIZE = 0.8
 
 export const verifyDistance = (keypoints: NormalizedLandmark[], ismobile: boolean): DistanceVerification => {
-	const faceSize =
-		calculateDistance(keypoints[454].x, keypoints[454].y, keypoints[234].x, keypoints[234].y) + (ismobile ? 0.4 : 0)
-	return faceSize > MAX_FACE_SIZE
+	const faceSize = ismobile
+		? calculateDistance(keypoints[234].x, keypoints[234].y, keypoints[454].x, keypoints[454].y)
+		: calculateDistance(keypoints[10].x, keypoints[10].y, keypoints[152].x, keypoints[152].y)
+
+	return faceSize >= MAX_FACE_SIZE
 		? DistanceVerification.CLOSE
-		: faceSize < MIN_FACE_SIZE
+		: faceSize <= MIN_FACE_SIZE
 		? DistanceVerification.FAR
 		: DistanceVerification.GOOD
 }
@@ -168,8 +170,11 @@ export const useFaceDetection = () => {
 		if (refVideo.current && lastVideoTime !== refVideo.current.video?.currentTime) {
 			lastVideoTime = refVideo.current.video!.currentTime
 			const faceLandmarkerResult = faceLandmarker.detectForVideo(refVideo.current.video!, nowInMs)
-
-			if (
+			if (!faceLandmarkerResult.faceLandmarks.length) {
+				setDistance(0)
+				setFaceBlendshapes(init)
+			}
+			else if (
 				faceLandmarkerResult.faceBlendshapes &&
 				faceLandmarkerResult.faceBlendshapes.length > 0 &&
 				faceLandmarkerResult.faceBlendshapes[0].categories
