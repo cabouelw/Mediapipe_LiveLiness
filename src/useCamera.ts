@@ -90,8 +90,8 @@ export const calculateDistance = (x1: number, y1: number, x2: number, y2: number
 }
 
 // Min and Max face size
-export const MIN_FACE_SIZE = 0.30
-export const MAX_FACE_SIZE = 0.80
+export const MIN_FACE_SIZE = 0.3
+export const MAX_FACE_SIZE = 0.8
 
 export const verifyDistance = (keypoints: NormalizedLandmark[], ismobile: boolean): DistanceVerification => {
 	const faceSize = ismobile
@@ -123,9 +123,7 @@ export const useFaceDetection = () => {
 			.getUserMedia({
 				audio: false,
 				video: {
-					width: { min: 320, ideal: 1280, max: 1920, exact: 1280 },
-					height: { min: 240, ideal: 720, max: 1080, exact: 720 },
-					aspectRatio: { ideal: 16 / 9 },
+					aspectRatio: { ideal: 1 },
 					facingMode: "user",
 				},
 			})
