@@ -1,73 +1,14 @@
-import { FC, useCallback, useEffect, useState } from "react"
+import { FC, useEffect, useState } from "react"
 import Webcam from "react-webcam"
-import { isBlinking, isHeadTurnLeft, isHeadTurnRight, isSmiling, useFaceDetection } from "../useCamera"
+import { useLivenessDetection } from "../hooks/useLivenessDetection"
+import { DistanceVerification, VerificationStepHumanCheck, isBlinking, isHeadTurnLeft, isHeadTurnRight, isSmiling, stepData, useMediaQuery } from "../utils/config"
 
-export enum VerificationStepHumanCheck {
-	LOOK_AT_THE_CAMERA = "LOOK_AT_THE_CAMERA",
-	TOO_CLOSE = "TOO_CLOSE",
-	TOO_FAR = "TOO_FAR",
-	BLINK_BOTH_EYES = "BLINK_BOTH_EYES",
-	SMILE = "SMILE",
-	TURN_HEAD_LEFT = "TURN_HEAD_LEFT",
-	TURN_HEAD_RIGHT = "TURN_HEAD_RIGHT",
-	FIN = "FIN",
-}
 
-const stepData = (currentStep: VerificationStepHumanCheck) => {
-	switch (currentStep) {
-		case VerificationStepHumanCheck.LOOK_AT_THE_CAMERA:
-			return { action: "", progress: 0, instruction: "look At Camera" }
-		case VerificationStepHumanCheck.TOO_CLOSE:
-			return { action: "", progress: 0, instruction: "move Further" }
-		case VerificationStepHumanCheck.TOO_FAR:
-			return { action: "", progress: 0, instruction: "move Closer" }
-		case VerificationStepHumanCheck.BLINK_BOTH_EYES:
-			return { action: "blink Both Eyes", progress: 20, instruction: "" }
-		case VerificationStepHumanCheck.SMILE:
-			return { action: "Smile :)", progress: 40, instruction: "" }
-		case VerificationStepHumanCheck.TURN_HEAD_LEFT:
-			return { action: "turn Head Left", progress: 60, instruction: "" }
-		case VerificationStepHumanCheck.TURN_HEAD_RIGHT:
-			return { action: "turn Head Right", progress: 80, instruction: "" }
-		case VerificationStepHumanCheck.FIN:
-			return { action: "done", progress: 100, instruction: "" }
-		default:
-			return { action: "", progress: 0, instruction: "" }
-	}
-}
-
-interface FaceApiProps {
-	onSubmit: () => void
-	setSelfie: (t: string) => void
-	photo: string
-}
-export enum DistanceVerification {
-	CLOSE = -1,
-	GOOD = 0,
-	FAR = 1,
-}
-
-export const useMediaQuery = (query: string): boolean => {
-	const [matches, setMatches] = useState<boolean>(false)
-
-	useEffect(() => {
-		const media = window.matchMedia(query)
-		if (media.matches !== matches) {
-			setMatches(media.matches)
-		}
-		const listener = () => setMatches(media.matches)
-		media.addListener(listener)
-		return () => media.removeListener(listener)
-	}, [matches, query])
-
-	return matches
-}
-
-export const FaceApi: FC<FaceApiProps> = ({ photo, setSelfie }) => {
+export const LivenessDetection: FC = () => {
 	const [currentStepHumanCheck, setCurrentStepHumanCheck] = useState<VerificationStepHumanCheck>(
 		VerificationStepHumanCheck.LOOK_AT_THE_CAMERA
 	)
-	const { refCanvas, refVideo, setup, handleVideo, faceBlendshapes, distance, predict } = useFaceDetection()
+	const { refCanvas, refVideo, setup, handleVideo, faceBlendshapes, distance, predict } = useLivenessDetection()
 	const isMobileHeight = useMediaQuery("(max-height: 768px)")
 	const isMobile = useMediaQuery("(max-width: 768px)") || isMobileHeight
 	const isSmallMobile = useMediaQuery("(max-width: 300px)")
@@ -89,12 +30,6 @@ export const FaceApi: FC<FaceApiProps> = ({ photo, setSelfie }) => {
 		}
 	}, [])
 
-	const takePicture = useCallback(() => {
-		const pictureSrc = refVideo?.current?.getScreenshot()
-		if (!pictureSrc || photo.length > 0) return
-		setSelfie(pictureSrc)
-	}, [refVideo, photo])
-
 	const stepsData = stepData(currentStepHumanCheck)
 
 	const handleGoodDistance = () => {
@@ -102,7 +37,6 @@ export const FaceApi: FC<FaceApiProps> = ({ photo, setSelfie }) => {
 			case VerificationStepHumanCheck.TOO_FAR:
 			case VerificationStepHumanCheck.TOO_CLOSE:
 				setCurrentStepHumanCheck(VerificationStepHumanCheck.BLINK_BOTH_EYES)
-				if (photo.length > 0) setSelfie("")
 				break
 			case VerificationStepHumanCheck.BLINK_BOTH_EYES:
 				if (isBlinking(faceBlendshapes)) {
@@ -119,7 +53,6 @@ export const FaceApi: FC<FaceApiProps> = ({ photo, setSelfie }) => {
 				}
 				break
 			case VerificationStepHumanCheck.TURN_HEAD_LEFT:
-				takePicture()
 				if (isHeadTurnLeft(faceBlendshapes)) {
 					setTimeout(() => {
 						setCurrentStepHumanCheck(VerificationStepHumanCheck.TURN_HEAD_RIGHT)
@@ -209,9 +142,11 @@ export const FaceApi: FC<FaceApiProps> = ({ photo, setSelfie }) => {
 					/>
 				</div>
 			</div>
-			<button className="bg-black text-white px-4 py-3 rounded-xl" onClick={handleVideo}>
-				Stop/Start
-			</button>
+			<div className="flex justify-center items-start">
+				<button className="bg-black text-white px-8 py-3 rounded-xl max-h-fit" onClick={handleVideo}>
+					Stop
+				</button>
+			</div>
 		</div>
 	)
 }
